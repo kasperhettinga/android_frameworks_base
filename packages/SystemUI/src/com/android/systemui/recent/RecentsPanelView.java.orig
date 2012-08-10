@@ -492,9 +492,10 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
         mRecentsNoApps = findViewById(R.id.recents_no_apps);
         mChoreo = new Choreographer(this, mRecentsScrim, mRecentsContainer, mRecentsNoApps, this);
 
+<<<<<<< HEAD
         mHighEndGfx = Settings.System.getInt(mContext.getContentResolver(),
                 Settings.System.HIGH_END_GFX_ENABLED, 0) != 0;
-
+=======
         mClearRecents = (ImageView) findViewById(R.id.recents_clear);
         if (mClearRecents != null){
             mClearRecents.setOnClickListener(new OnClickListener() {
@@ -504,6 +505,7 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
                 }
             });
         }
+>>>>>>> 134e388... "Clear all" button on recent apps
 
         if (mRecentsScrim != null) {
             Display d = ((WindowManager)mContext.getSystemService(Context.WINDOW_SERVICE))
