@@ -16,19 +16,18 @@
 
 package com.android.systemui.statusbar.policy;
 
+import android.app.ActivityManagerNative;
+import android.app.StatusBarManager;
 import android.content.BroadcastReceiver;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
-import android.database.ContentObserver;
 import android.graphics.Canvas;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
-import android.os.Handler;
-import android.provider.Settings;
+import android.provider.AlarmClock;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.format.DateFormat;
@@ -38,7 +37,10 @@ import android.text.style.RelativeSizeSpan;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnLongClickListener;
 import android.widget.TextView;
 
 import java.text.SimpleDateFormat;
@@ -51,59 +53,33 @@ import com.android.internal.R;
  * This widget display an analogic clock with two hands for hours and
  * minutes.
  */
-
-public class Clock extends TextView {
+public class ClockStock extends TextView implements OnClickListener, OnLongClickListener {
     private boolean mAttached;
     private Calendar mCalendar;
     private String mClockFormatString;
     private SimpleDateFormat mClockFormat;
+    private int mDefaultColor;
 
     private static final int AM_PM_STYLE_NORMAL  = 0;
     private static final int AM_PM_STYLE_SMALL   = 1;
     private static final int AM_PM_STYLE_GONE    = 2;
-    private static final int PROTEKK_O_CLOCK     = 3;
-    private static int AM_PM_STYLE = AM_PM_STYLE_GONE;
 
-    public static final int STYLE_HIDE_CLOCK    = 0;
-    public static final int STYLE_CLOCK_RIGHT   = 1;
-    public static final int STYLE_CLOCK_CENTER  = 2;
+    private static final int AM_PM_STYLE = AM_PM_STYLE_GONE;
 
-    protected int mClockStyle = STYLE_CLOCK_RIGHT;
-
-    private int mAmPmStyle;
-    private boolean mShowClock;
-
-    Handler mHandler;
-
-    class SettingsObserver extends ContentObserver {
-        SettingsObserver(Handler handler) {
-            super(handler);
-        }
-
-        void observe() {
-            ContentResolver resolver = mContext.getContentResolver();
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.STATUS_BAR_AM_PM), false, this);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.STATUS_BAR_CLOCK), false, this);
-            updateSettings();
-        }
-
-        @Override public void onChange(boolean selfChange) {
-            updateSettings();
-        }
-    }
-
-    public Clock(Context context) {
+    public ClockStock(Context context) {
         this(context, null);
     }
 
-    public Clock(Context context, AttributeSet attrs) {
+    public ClockStock(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public Clock(Context context, AttributeSet attrs, int defStyle) {
+    public ClockStock(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+            setOnClickListener(this);
+            setOnLongClickListener(this);
+
+        mDefaultColor = getCurrentTextColor();
     }
 
     @Override
@@ -129,10 +105,7 @@ public class Clock extends TextView {
         mCalendar = Calendar.getInstance(TimeZone.getDefault());
 
         // Make sure we update to the current time
-        //updateClock();
-        SettingsObserver settingsObserver = new SettingsObserver(new Handler());
-        settingsObserver.observe();
-        updateSettings();
+        updateClock();
     }
 
     @Override
@@ -238,33 +211,45 @@ public class Clock extends TextView {
                 return formatted;
             }
         }
-
+ 
         return result;
 
     }
+    private void collapseStartActivity(Intent what) {
 
-    private void updateSettings(){
-        ContentResolver resolver = mContext.getContentResolver();
+        // collapse status bar
+        StatusBarManager statusBarManager = (StatusBarManager) getContext().getSystemService(
+                Context.STATUS_BAR_SERVICE);
+        statusBarManager.collapse();
 
-        mAmPmStyle = (Settings.System.getInt(resolver,
-                Settings.System.STATUS_BAR_AM_PM, 2));
-        mClockStyle = Settings.System.getInt(resolver,
-                Settings.System.STATUS_BAR_CLOCK, STYLE_CLOCK_RIGHT);
-
-        if (mAmPmStyle != AM_PM_STYLE) {
-            AM_PM_STYLE = mAmPmStyle;
-            mClockFormatString = "";
+        // dismiss keyguard in case it was active and no passcode set
+        try {
+            ActivityManagerNative.getDefault().dismissKeyguardOnNextActivity();
+        } catch (Exception ex) {
+            // no action needed here
         }
 
-        updateClockVisibility();
-        updateClock();
+        // start activity
+        what.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(what);
     }
 
-    protected void updateClockVisibility() {
-        if (mClockStyle == STYLE_CLOCK_RIGHT)
-            setVisibility(View.VISIBLE);
-        else
-            setVisibility(View.GONE);
+    @Override
+    public void onClick(View v) {
+        setTextColor(mDefaultColor);
+        Intent intent = new Intent(AlarmClock.ACTION_SET_ALARM);
+        collapseStartActivity(intent);
+    }
+
+    @Override
+    public boolean onLongClick(View v) {
+        setTextColor(mDefaultColor);
+        Intent intent = new Intent("android.settings.DATE_SETTINGS");
+        intent.addCategory(Intent.CATEGORY_DEFAULT);
+        collapseStartActivity(intent);
+
+        // consume event
+        return true;
     }
 }
 
