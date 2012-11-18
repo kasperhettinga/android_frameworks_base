@@ -60,7 +60,22 @@ public class Clock extends TextView implements OnClickListener, OnLongClickListe
     private static final int AM_PM_STYLE_SMALL   = 1;
     private static final int AM_PM_STYLE_GONE    = 2;
 
-    private int mAmPmStyle = AM_PM_STYLE_GONE;
+    protected int mAmPmStyle = AM_PM_STYLE_GONE;
+
+    public static final int WEEKDAY_STYLE_GONE   = 0;
+    public static final int WEEKDAY_STYLE_SMALL  = 1;
+    public static final int WEEKDAY_STYLE_NORMAL = 2;
+
+    protected int mWeekdayStyle = WEEKDAY_STYLE_GONE;
+
+    public static final int STYLE_HIDE_CLOCK     = 0;
+    public static final int STYLE_CLOCK_RIGHT    = 1;
+    public static final int STYLE_CLOCK_CENTER   = 2;
+
+    protected int mClockStyle = STYLE_CLOCK_RIGHT;
+
+    protected int mClockColor = com.android.internal.R.color.holo_blue_light;
+
     private boolean mShowClock;
 
     Handler mHandler;
@@ -127,8 +142,9 @@ public class Clock extends TextView implements OnClickListener, OnLongClickListe
         // The time zone may have changed while the receiver wasn't registered, so update the Time
         mCalendar = Calendar.getInstance(TimeZone.getDefault());
 
-        // Make sure we update to the current time
-        updateClock();
+        SettingsObserver settingsObserver = new SettingsObserver(new Handler());
+        settingsObserver.observe();
+        updateSettings();
     }
 
     @Override
@@ -183,126 +199,143 @@ public class Clock extends TextView implements OnClickListener, OnLongClickListe
         SimpleDateFormat sdf;
         String format = context.getString(res);
         if (!format.equals(mClockFormatString)) {
-            /*
-             * Search for an unquoted "a" in the format string, so we can
-             * add dummy characters around it to let us find it again after
-             * formatting and change its size.
-             */
-            if (mAmPmStyle != AM_PM_STYLE_NORMAL) {
-                int a = -1;
-                boolean quoted = false;
-                for (int i = 0; i < format.length(); i++) {
-                    char c = format.charAt(i);
-
-                    if (c == '\'') {
-                        quoted = !quoted;
-                    }
-                    if (!quoted && c == 'a') {
-                        a = i;
-                        break;
-                    }
-                }
-
-                if (a >= 0) {
-                    // Move a back so any whitespace before AM/PM is also in the alternate size.
-                    final int b = a;
-                    while (a > 0 && Character.isWhitespace(format.charAt(a-1))) {
-                        a--;
-                    }
-                    format = format.substring(0, a) + MAGIC1 + format.substring(a, b)
-                        + "a" + MAGIC2 + format.substring(b + 1);
-                }
-            }
             mClockFormat = sdf = new SimpleDateFormat(format);
             mClockFormatString = format;
         } else {
             sdf = mClockFormat;
         }
+
+        Calendar calendar = Calendar.getInstance();
+        int day = calendar.get(Calendar.DAY_OF_WEEK);
+
+        String todayIs = null;
         String result = sdf.format(mCalendar.getTime());
 
-        if (mAmPmStyle != AM_PM_STYLE_NORMAL) {
-            int magic1 = result.indexOf(MAGIC1);
-            int magic2 = result.indexOf(MAGIC2);
-            if (magic1 >= 0 && magic2 > magic1) {
-                SpannableStringBuilder formatted = new SpannableStringBuilder(result);
+        if (mWeekdayStyle != WEEKDAY_STYLE_GONE) {
+            todayIs = whatDay(day);
+            result = todayIs + result;
+        }
+
+        SpannableStringBuilder formatted = new SpannableStringBuilder(result);
+
+        if (!b24) {
+            if (mAmPmStyle != AM_PM_STYLE_NORMAL) {
                 if (mAmPmStyle == AM_PM_STYLE_GONE) {
-                    formatted.delete(magic1, magic2+1);
+                    formatted.delete(result.length() - 3, result.length());
                 } else {
                     if (mAmPmStyle == AM_PM_STYLE_SMALL) {
                         CharacterStyle style = new RelativeSizeSpan(0.7f);
-                        formatted.setSpan(style, magic1, magic2,
+                        formatted.setSpan(style, result.length() - 3, result.length(),
+                                Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
+                    }
+                }
+            }
+        }
+        if (mWeekdayStyle != WEEKDAY_STYLE_NORMAL) {
+            if (todayIs != null) {
+                if (mWeekdayStyle == WEEKDAY_STYLE_GONE) {
+                    formatted.delete(0, 4);
+                } else {
+                    if (mWeekdayStyle == WEEKDAY_STYLE_SMALL) {
+                        CharacterStyle style = new RelativeSizeSpan(0.7f);
+                        formatted.setSpan(style, 0, 4,
                                           Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
                     }
-                    formatted.delete(magic2, magic2 + 1);
-                    formatted.delete(magic1, magic1 + 1);
                 }
-                return formatted;
             }
         }
-
-        return result;
-
+        return formatted;
     }
 
-    private void updateSettings(){
-        ContentResolver resolver = mContext.getContentResolver();
-
-        int amPmStyle = (Settings.System.getInt(resolver,
-                Settings.System.STATUS_BAR_AM_PM, 2));
-
-        if (mAmPmStyle != amPmStyle) {
-            mAmPmStyle = amPmStyle;
-            mClockFormatString = "";
-
-            if (mAttached) {
-                updateClock();
-            }
+    /**
+     * pull the int given by DAY_OF_WEEK into a day string
+     */
+    private String whatDay(int today) {
+    	String todayIs = null;
+    	switch (today) {
+    	case 1:
+			todayIs = "SUN ";
+			break;
+		case 2:
+			todayIs = "MON ";
+			break;
+		case 3:
+			todayIs = "TUE ";
+			break;
+		case 4:
+			todayIs = "WED ";
+			break;
+		case 5:
+			todayIs = "THU ";
+			break;
+		case 6:
+			todayIs = "FRI ";
+			break;
+		case 7:
+			todayIs = "SAT ";
+			break;
+    	}
+    		
+    	return todayIs;
+    }
+    
+    protected class SettingsObserver extends ContentObserver {
+        SettingsObserver(Handler handler) {
+            super(handler);
         }
 
-        mShowClock = (Settings.System.getInt(resolver,
-                Settings.System.STATUS_BAR_CLOCK, 1) == 1);
+        void observe() {
+            ContentResolver resolver = mContext.getContentResolver();
+            resolver.registerContentObserver(Settings.System
+                    .getUriFor(Settings.System.STATUSBAR_CLOCK_AM_PM_STYLE),
+                    false, this);
+            resolver.registerContentObserver(Settings.System
+                    .getUriFor(Settings.System.STATUSBAR_CLOCK_STYLE), false,
+                    this);
+            resolver.registerContentObserver(Settings.System
+                    .getUriFor(Settings.System.STATUSBAR_CLOCK_COLOR), false,
+                    this);
+            resolver.registerContentObserver(Settings.System
+                    .getUriFor(Settings.System.STATUSBAR_CLOCK_WEEKDAY), false,
+                    this);
+            updateSettings();
+        }
 
-        if(mShowClock)
+        @Override
+        public void onChange(boolean selfChange) {
+            updateSettings();
+        }
+    }
+
+    protected void updateSettings() {
+        ContentResolver resolver = mContext.getContentResolver();
+        int defaultColor = getResources().getColor(
+                com.android.internal.R.color.holo_blue_light);
+
+        mAmPmStyle = Settings.System.getInt(resolver,
+                Settings.System.STATUSBAR_CLOCK_AM_PM_STYLE, AM_PM_STYLE_GONE);   
+        mClockStyle = Settings.System.getInt(resolver,
+                Settings.System.STATUSBAR_CLOCK_STYLE, STYLE_CLOCK_RIGHT);
+        mWeekdayStyle = Settings.System.getInt(resolver,
+                Settings.System.STATUSBAR_CLOCK_WEEKDAY, WEEKDAY_STYLE_GONE);
+
+        mClockColor = Settings.System.getInt(resolver,
+                Settings.System.STATUSBAR_CLOCK_COLOR, defaultColor);
+        if (mClockColor == Integer.MIN_VALUE) {
+            // flag to reset the color
+            mClockColor = defaultColor;
+        }
+        setTextColor(mClockColor);
+
+        updateClockVisibility();
+        updateClock();
+    }
+
+    protected void updateClockVisibility() {
+        if (mClockStyle == STYLE_CLOCK_RIGHT)
             setVisibility(View.VISIBLE);
         else
             setVisibility(View.GONE);
-    }
-
-    private void collapseStartActivity(Intent what) {
-        // collapse status bar
-        StatusBarManager statusBarManager = (StatusBarManager) getContext().getSystemService(
-                Context.STATUS_BAR_SERVICE);
-        statusBarManager.collapsePanels();
-
-        // dismiss keyguard in case it was active and no passcode set
-        try {
-            ActivityManagerNative.getDefault().dismissKeyguardOnNextActivity();
-        } catch (Exception ex) {
-            // no action needed here
-        }
-
-        // start activity
-        what.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        mContext.startActivity(what);
-    }
-
-    @Override
-    public void onClick(View v) {
-        // start com.android.deskclock/.DeskClock
-        ComponentName clock = new ComponentName("com.android.deskclock",
-                "com.android.deskclock.DeskClock");
-        Intent intent = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-                .setComponent(clock);
-        collapseStartActivity(intent);
-    }
-
-    @Override
-    public boolean onLongClick(View v) {
-        Intent intent = new Intent(AlarmClock.ACTION_SET_ALARM);
-        collapseStartActivity(intent);
-
-        // consume event
-        return true;
     }
 }
 
