@@ -442,6 +442,10 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
         mRecentsScrim = findViewById(R.id.recents_bg_protect);
         mRecentsNoApps = findViewById(R.id.recents_no_apps);
 
+
+        mHighEndGfx = Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.HIGH_END_GFX_ENABLED, 0) != 0;
+
         mClearRecents = (ImageView) findViewById(R.id.recents_clear);
         if (mClearRecents != null){
             mClearRecents.setOnClickListener(new OnClickListener() {
@@ -453,7 +457,8 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
         }
 
         if (mRecentsScrim != null) {
-            mHighEndGfx = ActivityManager.isHighEndGfx();
+            if (!mHighEndGfx)
+                mHighEndGfx = ActivityManager.isHighEndGfx();
             if (!mHighEndGfx) {
                 mRecentsScrim.setBackground(null);
             } else if (mRecentsScrim.getBackground() instanceof BitmapDrawable) {
