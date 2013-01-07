@@ -2858,6 +2858,13 @@ public final class Settings {
         */
         public static final String STATUSBAR_CLOCK_DATE_FORMAT = "statusbar_clock_date_format";
 
+        /**
+		 * whether to hide the Ram Usage Bar on recent switcher
+         *
+         * @hide
+         */
+        public static final String RECENTS_RAM_BAR = "recents_ram_bar";
+
          /**
          * Whether to control brightness from status bar
          *
