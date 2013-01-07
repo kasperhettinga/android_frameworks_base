@@ -2713,6 +2713,13 @@ public final class Settings {
          */
         public static final String STATUS_BAR_SIGNAL_TEXT = "status_bar_signal";
 
+        /**
+         * whether to hide the Ram Usage Bar on recent switcher
+         *
+         * @hide
+         */
+        public static final String RECENTS_RAM_BAR = "recents_ram_bar";
+
          /**
          * Whether to control brightness from status bar
          *
