@@ -76,7 +76,6 @@ import com.android.systemui.statusbar.StatusBarIconView;
 import com.android.systemui.statusbar.policy.BatteryController;
 import com.android.systemui.statusbar.policy.BluetoothController;
 import com.android.systemui.statusbar.policy.CircleBattery;
-import com.android.systemui.statusbar.policy.Clock;
 import com.android.systemui.statusbar.policy.CompatModeButton;
 import com.android.systemui.statusbar.policy.LocationController;
 import com.android.systemui.statusbar.policy.NetworkController;
@@ -165,7 +164,6 @@ public class TabletStatusBar extends BaseStatusBar implements
     ViewGroup mBarContents;
 
     SignalClusterView mSignalView;
-    Clock mClock;
 
     // hide system chrome ("lights out") support
     View mShadow;
@@ -184,6 +182,9 @@ public class TabletStatusBar extends BaseStatusBar implements
 
     private InputMethodsPanel mInputMethodsPanel;
     private CompatModePanel mCompatModePanel;
+
+    // clock
+    private boolean mShowClock;
 
     private int mSystemUiVisibility = 0;
 
@@ -562,8 +563,6 @@ public class TabletStatusBar extends BaseStatusBar implements
         mNetworkController = new NetworkController(mContext);
         mSignalView = (SignalClusterView) sb.findViewById(R.id.signal_cluster);
         mNetworkController.addSignalCluster(mSignalView);
-
-        mClock = (Clock) sb.findViewById(R.id.clock);
 
         // The navigation buttons
         mBackButton = (ImageView)sb.findViewById(R.id.back);
@@ -945,8 +944,13 @@ public class TabletStatusBar extends BaseStatusBar implements
     }
 
     public void showClock(boolean show) {
-        if (mClock != null) {
-            mClock.setHidden(!show);
+        ContentResolver resolver = mContext.getContentResolver();
+        View clock = mBarContents.findViewById(R.id.clock);
+        View network_text = mBarContents.findViewById(R.id.network_text);
+        mShowClock = (Settings.System.getInt(resolver,
+                Settings.System.STATUS_BAR_CLOCK, 1) == 1);
+        if (clock != null) {
+            clock.setVisibility(show ? (mShowClock ? View.VISIBLE : View.GONE) : View.GONE);
         }
         View networkText = mBarContents.findViewById(R.id.network_text);
         if (networkText != null) {
@@ -1618,9 +1622,6 @@ public class TabletStatusBar extends BaseStatusBar implements
     public void userSwitched(int newUserId) {
         if (mSignalView != null) {
             mSignalView.updateSettings();
-        }
-        if (mClock != null) {
-            mClock.updateSettings();
         }
         if (mBatteryController != null) {
             mBatteryController.updateSettings();
