@@ -19,7 +19,6 @@ package com.android.systemui.statusbar.policy;
 import android.app.ActivityManagerNative;
 import android.app.StatusBarManager;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
@@ -282,17 +281,14 @@ public class Clock extends TextView implements OnClickListener, OnLongClickListe
 
     @Override
     public void onClick(View v) {
-        // start com.android.deskclock/.DeskClock
-        ComponentName clock = new ComponentName("com.android.deskclock",
-                "com.android.deskclock.DeskClock");
-        Intent intent = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-                .setComponent(clock);
+        Intent intent = new Intent(AlarmClock.ACTION_SET_ALARM);
         collapseStartActivity(intent);
     }
 
     @Override
     public boolean onLongClick(View v) {
-        Intent intent = new Intent(AlarmClock.ACTION_SET_ALARM);
+        Intent intent = new Intent("android.settings.DATE_SETTINGS");
+        intent.addCategory(Intent.CATEGORY_DEFAULT);
         collapseStartActivity(intent);
 
         // consume event
