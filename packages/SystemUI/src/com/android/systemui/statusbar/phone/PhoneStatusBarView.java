@@ -200,7 +200,7 @@ public class PhoneStatusBarView extends PanelBar {
             Slog.v(TAG, "panelExpansionChanged: f=" + frac);
         }
 
-        if (panel == mFadingPanel && mScrimColor != 0 && ActivityManager.isHighEndGfx() ||
+        if (panel == mFadingPanel && mScrimColor != 0 && PhoneStatusBar.shouldNotificationShadeDim() ||
                 (panel == mFadingPanel && mScrimColor != 0 && mHighEndGfx)) {
             if (mShouldFade) {
                 frac = mPanelExpandedFractionSum; // don't judge me
