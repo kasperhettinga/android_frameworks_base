@@ -16,40 +16,43 @@
 
 package com.android.systemui.statusbar.policy;
 
-import android.app.ActivityManagerNative;
-import android.app.StatusBarManager;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.res.Resources;
+import android.content.res.TypedArray;
 import android.database.ContentObserver;
+import android.graphics.Canvas;
+import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.os.Handler;
-import android.provider.AlarmClock;
 import android.provider.Settings;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.format.DateFormat;
 import android.text.style.CharacterStyle;
+import android.text.style.ForegroundColorSpan;
 import android.text.style.RelativeSizeSpan;
+import android.text.style.RelativeSizeSpan;
+import android.text.style.StyleSpan;
 import android.util.AttributeSet;
+import android.util.Slog;
 import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.View.OnLongClickListener;
 import android.widget.TextView;
-
-import com.android.internal.R;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import com.android.internal.R;
+
 /**
  * Digital clock for the status bar.
  */
-public class Clock extends TextView implements OnClickListener, OnLongClickListener {
+public class Clock extends TextView {
     private boolean mAttached;
     private Calendar mCalendar;
     private String mClockFormatString;
@@ -74,29 +77,7 @@ public class Clock extends TextView implements OnClickListener, OnLongClickListe
 
     protected int mClockStyle = STYLE_CLOCK_RIGHT;
 
-    protected int mClockColor = com.android.internal.R.color.holo_blue_light;
-
-    private boolean mShowClock;
-
-    Handler mHandler;
-
-    class SettingsObserver extends ContentObserver {
-        SettingsObserver(Handler handler) {
-            super(handler);
-        }
-
-        void observe() {
-            ContentResolver resolver = mContext.getContentResolver();
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.STATUS_BAR_AM_PM), false, this);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.STATUS_BAR_CLOCK), false, this);
-        }
-
-        @Override public void onChange(boolean selfChange) {
-            updateSettings();
-        }
-    }
+    protected int mClockColor = 0xFF33B5E5;
 
     public Clock(Context context) {
         this(context, null);
@@ -108,15 +89,6 @@ public class Clock extends TextView implements OnClickListener, OnLongClickListe
 
     public Clock(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-
-        mHandler = new Handler();
-        SettingsObserver settingsObserver = new SettingsObserver(mHandler);
-        settingsObserver.observe();
-        if(isClickable()){
-            setOnClickListener(this);
-            setOnLongClickListener(this);
-        }
-        updateSettings();
     }
 
     @Override
@@ -212,7 +184,7 @@ public class Clock extends TextView implements OnClickListener, OnLongClickListe
         String result = sdf.format(mCalendar.getTime());
 
         if (mWeekdayStyle != WEEKDAY_STYLE_GONE) {
-            todayIs = whatDay(day);
+            todayIs = (new SimpleDateFormat("E")).format(mCalendar.getTime()) + " ";
             result = todayIs + result;
         }
 
@@ -220,12 +192,18 @@ public class Clock extends TextView implements OnClickListener, OnLongClickListe
 
         if (!b24) {
             if (mAmPmStyle != AM_PM_STYLE_NORMAL) {
+                String AmPm;
+                if (format.indexOf("a")==0) {
+                    AmPm = (new SimpleDateFormat("a ")).format(mCalendar.getTime());
+                } else {
+                    AmPm = (new SimpleDateFormat(" a")).format(mCalendar.getTime());
+                }
                 if (mAmPmStyle == AM_PM_STYLE_GONE) {
-                    formatted.delete(result.length() - 3, result.length());
+                    formatted.delete(result.indexOf(AmPm), result.lastIndexOf(AmPm)+AmPm.length());
                 } else {
                     if (mAmPmStyle == AM_PM_STYLE_SMALL) {
                         CharacterStyle style = new RelativeSizeSpan(0.7f);
-                        formatted.setSpan(style, result.length() - 3, result.length(),
+                        formatted.setSpan(style, result.indexOf(AmPm), result.lastIndexOf(AmPm)+AmPm.length(),
                                 Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
                     }
                 }
@@ -234,11 +212,11 @@ public class Clock extends TextView implements OnClickListener, OnLongClickListe
         if (mWeekdayStyle != WEEKDAY_STYLE_NORMAL) {
             if (todayIs != null) {
                 if (mWeekdayStyle == WEEKDAY_STYLE_GONE) {
-                    formatted.delete(0, 4);
+                    formatted.delete(result.indexOf(todayIs), result.lastIndexOf(todayIs)+todayIs.length());
                 } else {
                     if (mWeekdayStyle == WEEKDAY_STYLE_SMALL) {
                         CharacterStyle style = new RelativeSizeSpan(0.7f);
-                        formatted.setSpan(style, 0, 4,
+                        formatted.setSpan(style, result.indexOf(todayIs), result.lastIndexOf(todayIs)+todayIs.length(),
                                           Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
                     }
                 }
@@ -247,38 +225,6 @@ public class Clock extends TextView implements OnClickListener, OnLongClickListe
         return formatted;
     }
 
-    /**
-     * pull the int given by DAY_OF_WEEK into a day string
-     */
-    private String whatDay(int today) {
-    	String todayIs = null;
-    	switch (today) {
-    	case 1:
-			todayIs = "SUN ";
-			break;
-		case 2:
-			todayIs = "MON ";
-			break;
-		case 3:
-			todayIs = "TUE ";
-			break;
-		case 4:
-			todayIs = "WED ";
-			break;
-		case 5:
-			todayIs = "THU ";
-			break;
-		case 6:
-			todayIs = "FRI ";
-			break;
-		case 7:
-			todayIs = "SAT ";
-			break;
-    	}
-    		
-    	return todayIs;
-    }
-    
     protected class SettingsObserver extends ContentObserver {
         SettingsObserver(Handler handler) {
             super(handler);
@@ -293,7 +239,7 @@ public class Clock extends TextView implements OnClickListener, OnLongClickListe
                     .getUriFor(Settings.System.STATUSBAR_CLOCK_STYLE), false,
                     this);
             resolver.registerContentObserver(Settings.System
-                    .getUriFor(Settings.System.STATUSBAR_CLOCK_COLOR), false,
+                    .getUriFor(Settings.System.STATUS_BAR_CLOCK_COLOR), false,
                     this);
             resolver.registerContentObserver(Settings.System
                     .getUriFor(Settings.System.STATUSBAR_CLOCK_WEEKDAY), false,
@@ -309,8 +255,7 @@ public class Clock extends TextView implements OnClickListener, OnLongClickListe
 
     protected void updateSettings() {
         ContentResolver resolver = mContext.getContentResolver();
-        int defaultColor = getResources().getColor(
-                com.android.internal.R.color.holo_blue_light);
+        int defaultColor = 0xFF33B5E5;
 
         mAmPmStyle = Settings.System.getInt(resolver,
                 Settings.System.STATUSBAR_CLOCK_AM_PM_STYLE, AM_PM_STYLE_GONE);   
@@ -320,11 +265,8 @@ public class Clock extends TextView implements OnClickListener, OnLongClickListe
                 Settings.System.STATUSBAR_CLOCK_WEEKDAY, WEEKDAY_STYLE_GONE);
 
         mClockColor = Settings.System.getInt(resolver,
-                Settings.System.STATUSBAR_CLOCK_COLOR, defaultColor);
-        if (mClockColor == Integer.MIN_VALUE) {
-            // flag to reset the color
-            mClockColor = defaultColor;
-        }
+                Settings.System.STATUS_BAR_CLOCK_COLOR, defaultColor);
+
         setTextColor(mClockColor);
 
         updateClockVisibility();

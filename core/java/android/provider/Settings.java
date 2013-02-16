@@ -2525,7 +2525,7 @@ public final class Settings {
          * Setting for clock color
          * @hide
          */
-        public static final String STATUSBAR_CLOCK_COLOR = "statusbar_clock_color";
+        public static final String STATUS_BAR_CLOCK_COLOR = "status_bar_clock_color";
 
         /**
          * Shows weekday before clock time
