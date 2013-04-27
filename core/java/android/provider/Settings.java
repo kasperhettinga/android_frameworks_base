@@ -2995,6 +2995,12 @@ public final class Settings {
         /** @hide */
         public static final int STATUS_BAR_COLLAPSE_IF_NO_CLEARABLE = 2;
 
+       /**
+        * Whether fcharge is enabled or not if kernel supports it
+        * @hide
+        */
+        public static final String FCHARGE_ENABLED = "fcharge_enabled";
+
         /**
          * Whether to use a separate delay for "slide to unlock" and security
          * lock
