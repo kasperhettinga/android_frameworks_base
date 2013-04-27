@@ -16,6 +16,9 @@
 
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
 
+    <!-- Fast charge toggle -->
+    <string name="quick_settings_fcharge">Fast charge</string>
+
     <!-- Recents Ram Bar -->
     <string name="memory">RAM</string>
     <!-- [CHAR LIMIT=10] Running services, summary of background processes -->
