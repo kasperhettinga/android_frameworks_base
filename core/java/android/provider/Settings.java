@@ -2402,12 +2402,39 @@ public final class Settings {
         public static final String WIDGET_BUTTONS_TABLET = "expanded_widget_buttons_tablet";
 
         /**
-
          * Navigation controls to Use
          *
          * @hide
          */
         public static final String NAV_BUTTONS = "nav_buttons";
+
+        /**
+         * Navigation Bar show switch
+         *
+         * @hide
+         */
+        public static final String NAVIGATION_BAR_SHOW = "navigation_bar_show";
+
+        /**
+         * Enable Menu key
+         *
+         * @hide
+         */
+        public static final String KEY_MENU_ENABLED = "key_menu_enabled";
+
+        /**
+         * Enable Back key
+         *
+         * @hide
+         */
+        public static final String KEY_BACK_ENABLED = "key_back_enabled";
+
+        /**
+         * Enable Home key
+         *
+         * @hide
+         */
+        public static final String KEY_HOME_ENABLED = "key_home_enabled";
 
         /**
         * Notification Power Widget - Custom Brightness Mode
@@ -2478,7 +2505,8 @@ public final class Settings {
          * Whether to show the clock in status bar
          * of the stock battery icon
          * 0: don't show the clock
-         * 1: show the clock
+         * 1: right side clock
+         * 2: center clock
          * default: 1
          * @hide
          */
@@ -2834,6 +2862,12 @@ public final class Settings {
          * @hide
          */
         public static final String POWER_MENU_SILENT_ENABLED = "power_menu_silent_enabled";
+
+        /**
+         * Whether to display high end graphics effects disabled on older devices
+         * @hide
+         */
+        public static final String HIGH_END_GFX_ENABLED = "high_end_gfx_enabled";
 
         /**
          * Whether to enable custom rebindings of the actions performed on
