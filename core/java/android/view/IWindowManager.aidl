@@ -300,4 +300,6 @@ interface IWindowManager
      * Update the application display metrics
      */
     void updateDisplayMetrics();
+
+    void toggleStatusBar();
 }
