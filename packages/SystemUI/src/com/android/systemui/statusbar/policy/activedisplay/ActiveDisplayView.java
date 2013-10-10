@@ -860,6 +860,8 @@ public class ActiveDisplayView extends FrameLayout {
                         }
                     }
                 } catch (RemoteException re) {
+                } catch (Resources.NotFoundException e) {
+                } catch (NullPointerException npe) {
                 }
             }
         });
@@ -966,6 +968,7 @@ public class ActiveDisplayView extends FrameLayout {
             mNotificationDrawable = mContext.getResources().getDrawable(R.drawable.ic_ad_unknown_icon);
         } catch (Resources.NotFoundException nfe) {
             mNotificationDrawable = mContext.getResources().getDrawable(R.drawable.ic_ad_unknown_icon);
+        } catch (NullPointerException npe) {
         }
         mCurrentNotificationIcon.setImageDrawable(mNotificationDrawable);
         setHandleText(sbn);
