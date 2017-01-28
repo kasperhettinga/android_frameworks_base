@@ -138,15 +138,6 @@ public class AppOpsService extends IAppOpsService.Stub {
      */
     private final ArrayMap<IBinder, ClientRestrictionState> mOpUserRestrictions = new ArrayMap<>();
 
-    private Runnable mSuSessionChangedRunner = new Runnable() {
-        @Override
-        public void run() {
-            mContext.sendBroadcastAsUser(new Intent(AppOpsManager.ACTION_SU_SESSION_CHANGED),
-                    UserHandle.ALL);
-        }
-    };
-
-
     private static final class UidState {
         public final int uid;
         public ArrayMap<String, Ops> pkgOps;
@@ -275,13 +266,6 @@ public class AppOpsService extends IAppOpsService.Stub {
                     finishOperationLocked(mStartedOps.get(i));
                 }
                 mClients.remove(mAppToken);
-            }
-
-            // We cannot broadcast on the synchronized block above because the broadcast might
-            // trigger another appop call that eventually arrives here from a different thread,
-            // causing a deadlock.
-            for (int i=mStartedOps.size()-1; i>=0; i--) {
-                broadcastOpIfNeeded(mStartedOps.get(i).op);
             }
         }
     }
@@ -1222,15 +1206,12 @@ public class AppOpsService extends IAppOpsService.Stub {
                 op.rejectTime = 0;
                 op.proxyUid = proxyUid;
                 op.proxyPackageName = proxyPackageName;
-                broadcastOpIfNeeded(code);
                 op.allowedCount++;
                 return AppOpsManager.MODE_ALLOWED;
             }
         }
 
-        int result = req.get();
-        broadcastOpIfNeeded(code);
-        return result;
+        return req.get();
     }
 
     @Override
@@ -1292,7 +1273,6 @@ public class AppOpsService extends IAppOpsService.Stub {
                 if (client.mStartedOps != null) {
                     client.mStartedOps.add(op);
                 }
-                broadcastOpIfNeeded(code);
                 return AppOpsManager.MODE_ALLOWED;
             } else {
                 if (Looper.myLooper() == mLooper) {
@@ -1311,9 +1291,7 @@ public class AppOpsService extends IAppOpsService.Stub {
                 req = askOperationLocked(code, uid, resolvedPackageName, switchOp);
             }
         }
-        int result = req.get();
-        broadcastOpIfNeeded(code);
-        return result;
+        return req.get();
     }
 
     @Override
@@ -1341,7 +1319,6 @@ public class AppOpsService extends IAppOpsService.Stub {
             }
             finishOperationLocked(op);
         }
-        broadcastOpIfNeeded(code);
     }
 
     @Override
@@ -2855,16 +2832,6 @@ public class AppOpsService extends IAppOpsService.Stub {
                 }
             }
             return true;
-        }
-    }
-
-    private void broadcastOpIfNeeded(int op) {
-        switch (op) {
-            case AppOpsManager.OP_SU:
-                mHandler.post(mSuSessionChangedRunner);
-                break;
-            default:
-                break;
         }
     }
 

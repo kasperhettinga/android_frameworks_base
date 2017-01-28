@@ -45,7 +45,6 @@
     <java-symbol type="string" name="deny" />
     <java-symbol type="layout" name="permission_confirmation_dialog" />
     <java-symbol type="array" name="app_ops_labels" />
-    <java-symbol type="string" name="status_bar_su" />
 
     <!-- Usb drive persistent notification -->
     <java-symbol type="bool" name="config_persistUsbDriveNotification" />
